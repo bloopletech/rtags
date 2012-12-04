@@ -87,6 +87,12 @@ EXAMPLE
   opts.on("-R", "--recurse", "Recurse path for .rb files (default '.')") do 
     $options.recurse = true
   end
+  opts.on("--filter", "Run as a filter; see ctags --filter for details. IMPLEMENTED ONLY FOR -x MODE") do
+    $options.filter = true
+  end
+  opts.on("--filter-terminator terminator", String, "Terminate each output file with given terminator; see ctags --filter-terminator for details. IMPLEMENTED ONLY FOR -x MODE") do |s|
+    $options.filter_terminator = s
+  end
 end.parse!(ARGV)
 
 if $options.tagfile == nil
@@ -753,7 +759,7 @@ module RTAGS
   
 end
 
-if ARGV.size == 0 or ARGV[0] == '--help'
+if (!$options.filter && ARGV.size == 0) or ARGV[0] == '--help'
         ARGV.shift
         print usage
         exit 1
@@ -762,7 +768,17 @@ end
 if $options.vi
   tags = RTAGS::VI_TAGS.new(ARGV)
 elsif $options.xref
-  tags = RTAGS::XREF_TAGS.new(ARGV)
+  if $options.filter
+    loop do
+      file_name = $stdin.gets
+      exit if !file_name
+      RTAGS::XREF_TAGS.new([file_name.chomp]).shipout
+      puts $options.filter_terminator if $options.filter_terminator
+      $stdout.flush
+    end
+  else
+    tags = RTAGS::XREF_TAGS.new(ARGV)
+  end
 else
   tags = RTAGS::EMACS_TAGS.new(ARGV)
 end
