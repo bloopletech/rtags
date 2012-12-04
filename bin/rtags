@@ -740,14 +740,14 @@ module RTAGS
           $stderr.print tk, "\n" if $options.debug
           line = tk.readed.split(/\n/)[0]
           output.push sprintf("%-16s %4d %-16s %s\n",
-                              tk.name,
+                              tk.name.gsub(/^::/, "").gsub("::", ":").gsub(".", "#"),
                               tk.line_no,
                               fn,
                               line)
 
           unless $options.xref_only_base
             output.push sprintf("%-16s %4d %-16s %s\n",
-                                tk.abs_name,
+                                tk.abs_name.gsub(/^::/, "").gsub("::", ":").gsub(".", "#"),
                                 tk.line_no,
                                 fn,
                                 line)
