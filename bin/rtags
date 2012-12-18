@@ -75,6 +75,9 @@ EXAMPLE
   opts.on("-b", "When using -x, only print base name. E.g., print only 'method' and not '::Module::Class#method'") do
     $options.xref_only_base = true
   end
+  opts.on("-B", "When using -x, only print absolute name. E.g., print only '::Module::Class#method' and not 'method'. Inverse of -b") do
+    $options.xref_only_abs = true
+  end
   opts.on("--quiet", "Quiet mode") do 
     $options.quiet = true
   end
@@ -744,11 +747,13 @@ module RTAGS
         parser.scan do |tk|
           $stderr.print tk, "\n" if $options.debug
           line = tk.readed.split(/\n/)[0]
-          output.push sprintf("%-16s %4d %-16s %s\n",
-                              tk.name.gsub(/^::/, "").gsub("::", ":").gsub(".", "#"),
-                              tk.line_no,
-                              fn,
-                              line)
+          unless $options.xref_only_abs
+            output.push sprintf("%-16s %4d %-16s %s\n",
+                                tk.name.gsub(/^::/, "").gsub("::", ":").gsub(".", "#"),
+                                tk.line_no,
+                                fn,
+                                line)
+          end
 
           unless $options.xref_only_base
             output.push sprintf("%-16s %4d %-16s %s\n",
