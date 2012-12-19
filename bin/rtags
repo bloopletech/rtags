@@ -90,6 +90,9 @@ EXAMPLE
   opts.on("-R", "--recurse", "Recurse path for .rb files (default '.')") do 
     $options.recurse = true
   end
+  opts.on("-L file", String, "Read from file a list of file names for which tags should be generated.") do |f|
+    $options.files_in_list = f
+  end
   opts.on("--filter", "Run as a filter; see ctags --filter for details. IMPLEMENTED ONLY FOR -x MODE") do
     $options.filter = true
   end
@@ -771,14 +774,17 @@ module RTAGS
   
 end
 
-if (!$options.filter && ARGV.size == 0) or ARGV[0] == '--help'
+if (!$options.filter && !$options.files_in_list && ARGV.size == 0) or ARGV[0] == '--help'
         ARGV.shift
         print usage
         exit 1
 end
 
+files = ARGV
+files += File.readlines($options.files_in_list).map { |f| f.chomp } if $options.files_in_list
+
 if $options.vi
-  tags = RTAGS::VI_TAGS.new(ARGV)
+  tags = RTAGS::VI_TAGS.new(files)
 elsif $options.xref
   if $options.filter
     loop do
@@ -789,10 +795,10 @@ elsif $options.xref
       $stdout.flush
     end
   else
-    tags = RTAGS::XREF_TAGS.new(ARGV)
+    tags = RTAGS::XREF_TAGS.new(files)
   end
 else
-  tags = RTAGS::EMACS_TAGS.new(ARGV)
+  tags = RTAGS::EMACS_TAGS.new(files)
 end
 tags.shipout
 print "\n" if !$options.xref
