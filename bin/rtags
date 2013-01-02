@@ -78,9 +78,6 @@ EXAMPLE
   opts.on("-B", "When using -x, only print absolute name. E.g., print only '::Module::Class#method' and not 'method'. Inverse of -b") do
     $options.xref_only_abs = true
   end
-  opts.on("--x-tabs", "When using -x, print tabs between tokens instead of space; similar to ctags -x --format=1") do
-    $options.xref_tabs = true
-  end
   opts.on("--quiet", "Quiet mode") do 
     $options.quiet = true
   end
@@ -737,9 +734,6 @@ module RTAGS
   end
 
   class XREF_TAGS < TAGS
-    XREF_FORMAT = "%-16s %4d %-16s %s\n"
-    XREF_TABS_FORMAT = "%-16s\t%4d\t%-16s\t%s\n"
-
     # Print cross ref file (like ctags -x)
     def shipout
       output = []
@@ -757,16 +751,16 @@ module RTAGS
           $stderr.print tk, "\n" if $options.debug
           line = tk.readed.split(/\n/)[0]
           unless $options.xref_only_abs
-            output.push sprintf($options.xref_tabs ? XREF_TABS_FORMAT : XREF_FORMAT,
-                                tk.name.gsub(/^::/, "").gsub(".", "#").strip,
+            output.push sprintf("%-16s %4d %-16s %s\n",
+                                tk.name.gsub(/^::/, "").gsub("::", ":").gsub(".", "#"),
                                 tk.line_no,
                                 fn,
                                 line)
           end
 
           unless $options.xref_only_base
-            output.push sprintf($options.xref_tabs ? XREF_TABS_FORMAT : XREF_FORMAT,
-                                tk.abs_name.gsub(/^::/, "").gsub(".", "#").strip,
+            output.push sprintf("%-16s %4d %-16s %s\n",
+                                tk.abs_name.gsub(/^::/, "").gsub("::", ":").gsub(".", "#"),
                                 tk.line_no,
                                 fn,
                                 line)
