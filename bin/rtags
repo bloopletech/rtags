@@ -93,12 +93,6 @@ EXAMPLE
   opts.on("-L file", String, "Read from file a list of file names for which tags should be generated.") do |f|
     $options.files_in_list = f
   end
-  opts.on("--filter", "Run as a filter; see ctags --filter for details. IMPLEMENTED ONLY FOR -x MODE") do
-    $options.filter = true
-  end
-  opts.on("--filter-terminator terminator", String, "Terminate each output file with given terminator; see ctags --filter-terminator for details. IMPLEMENTED ONLY FOR -x MODE") do |s|
-    $options.filter_terminator = s
-  end
 end.parse!(ARGV)
 
 if $options.tagfile == nil
@@ -193,7 +187,7 @@ module RTAGS
     end
 
     def def_name
-      "def"
+      "method"
     end
   end
 	
@@ -215,7 +209,7 @@ module RTAGS
     end
 
     def def_name
-      "def"
+      "class method"
     end
   end
 	
@@ -751,16 +745,18 @@ module RTAGS
           $stderr.print tk, "\n" if $options.debug
           line = tk.readed.split(/\n/)[0]
           unless $options.xref_only_abs
-            output.push sprintf("%-16s %4d %-16s %s\n",
+            output.push sprintf("%-16s %-10s %4d %-16s %s\n",
                                 tk.name.gsub(/^::/, "").gsub("::", ":").gsub(".", "#"),
+                                tk.def_name,
                                 tk.line_no,
                                 fn,
                                 line)
           end
 
           unless $options.xref_only_base
-            output.push sprintf("%-16s %4d %-16s %s\n",
+            output.push sprintf("%-16s %-10s %4d %-16s %s\n",
                                 tk.abs_name.gsub(/^::/, "").gsub("::", ":").gsub(".", "#"),
+                                tk.def_name,
                                 tk.line_no,
                                 fn,
                                 line)
@@ -774,7 +770,7 @@ module RTAGS
   
 end
 
-if (!$options.filter && !$options.files_in_list && ARGV.size == 0) or ARGV[0] == '--help'
+if (!$options.files_in_list && ARGV.size == 0) or ARGV[0] == '--help'
         ARGV.shift
         print usage
         exit 1
@@ -786,17 +782,7 @@ files += File.readlines($options.files_in_list).map { |f| f.chomp } if $options.
 if $options.vi
   tags = RTAGS::VI_TAGS.new(files)
 elsif $options.xref
-  if $options.filter
-    loop do
-      file_name = $stdin.gets
-      exit if !file_name
-      RTAGS::XREF_TAGS.new([file_name.chomp]).shipout
-      puts $options.filter_terminator if $options.filter_terminator
-      $stdout.flush
-    end
-  else
-    tags = RTAGS::XREF_TAGS.new(files)
-  end
+  tags = RTAGS::XREF_TAGS.new(files)
 else
   tags = RTAGS::EMACS_TAGS.new(files)
 end
