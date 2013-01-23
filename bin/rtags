@@ -816,7 +816,7 @@ module RTAGS
           line = tk.readed.split(/\n/)[0]
           unless $options.xref_only_abs
             output.push sprintf("%-16s %-10s %4d %-16s %s\n",
-                                tk.name.gsub(/^::/, ""),
+                                tk.name.gsub(/^::/, "").gsub(" ", "_"),
                                 tk.def_name,
                                 tk.line_no,
                                 fn,
@@ -825,7 +825,7 @@ module RTAGS
 
           unless $options.xref_only_base
             output.push sprintf("%-16s %-10s %4d %-16s %s\n",
-                                tk.abs_name.gsub(/^::/, ""),
+                                tk.abs_name.gsub(/^::/, "").gsub(" ", "_"),
                                 tk.def_name,
                                 tk.line_no,
                                 fn,
