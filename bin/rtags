@@ -205,7 +205,7 @@ module RTAGS
 
   class RTClassCall < RTMethod
     def abs_name
-      (context || "") + "!#{token.name}(#{name})"
+      (context || "") + "!" + (token.name == name ? name : "#{token.name}(#{name})")
     end
 
     def def_name
@@ -237,7 +237,7 @@ module RTAGS
 
   class RTSingleClassCall < RTSingleMethod
     def abs_name
-      (context || "") + ":#{token.name}(#{name})"
+      (context || "") + ":" + (token.name == name ? name : "#{token.name}(#{name})")
     end
 
     def def_name
