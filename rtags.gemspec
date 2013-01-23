@@ -2,7 +2,7 @@
 Kernel.load File.expand_path('../lib/rtags/version.rb', __FILE__)
 
 Gem::Specification.new do |s|
-	s.name = 'rtags'
+	s.name = 'bloopletech-rtags'
 	s.version = Rtags::VERSION
 	s.platform = Gem::Platform::RUBY
 	s.summary = "rtags is a Ruby replacement for ctags - allowing for name navigation in source code using vim, emacs and others"
