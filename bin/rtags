@@ -203,6 +203,16 @@ module RTAGS
     end
   end
 
+  class RTClassCall < RTMethod
+    def abs_name
+      (context || "") + "!#{token.name}(#{name})"
+    end
+
+    def def_name
+      "class call"
+    end
+  end
+
   class RTSingleMethod < RTToken
     def abs_name
       (context || "") + "." + name
@@ -222,6 +232,16 @@ module RTAGS
   class RTSingleAttr < RTSingleMethod
     def def_name
       "attr"
+    end
+  end
+
+  class RTSingleClassCall < RTSingleMethod
+    def abs_name
+      (context || "") + ":#{token.name}(#{name})"
+    end
+
+    def def_name
+      "class call"
     end
   end
   
@@ -285,15 +305,13 @@ module RTAGS
       end
     end
 
-		# lookahead returning the next token without popping it
-
-		def peek_tk
+    # lookahead returning the next token without popping it
+    def peek_tk
       unget_tk(tk = get_tk)
       tk
     end
 
-		# push the token +tk+ back onto the stack
-
+    # push the token +tk+ back onto the stack
     def unget_tk(tk)
       @tokens.unshift tk
       @unget_readed.unshift @readed.pop
@@ -309,10 +327,9 @@ module RTAGS
       tokens
     end
 
-		# returns the actual token string as it was read and 
-		# sets the read buffer to zero length
-
-		def get_tkreaded
+    # returns the actual token string as it was read and 
+    # sets the read buffer to zero length
+    def get_tkreaded
       readed = @readed.join("")
       @readed = []
       readed
@@ -328,8 +345,9 @@ module RTAGS
       begin
 				last_seekpos = -1
         nest = 1
+        symbeg = false
 
-        while tk = get_tk
+        while (tk = get_tk)
           case tk
           when TkCLASS
             parse_class(context, single, tk, &block)
@@ -349,13 +367,11 @@ module RTAGS
                TkWHILE, 
                TkBEGIN
             nest += 1
+          when TkSYMBEG
+            symbeg = true
           when TkIDENTIFIER
-             case tk.name
-             when "attr"
-              parse_attr(context, single, tk, &block)
-            when /^attr_(reader|writer|accessor)$/
-              parse_attr_accessor(context, single, tk, &block)
-            end
+            parse_identifier(context, single, nest, symbeg, tk, &block)
+            symbeg = false
           when TkEND
             return if (nest -= 1) == 0
           end
@@ -375,7 +391,7 @@ module RTAGS
 					# p [@input_file_name, peek_tk]
         end
       rescue
-				warn('parse error',0,tk,$!)
+				warn('parse error',0,tk,"#{$!.message}:\n#{$!.backtrace.join("\n")}")
       end
     end
 
@@ -545,10 +561,48 @@ module RTAGS
       end    
     end
 
+    KNOWN_CLASS_METHOD_CALLS = %w(belongs_to has_one has_many has_and_belongs_to_many after_create after_destroy after_find after_initialize after_save after_update after_validation around_create around_destroy around_save around_update before_create before_destroy before_save before_update before_validation)
+
+    def parse_known_class_method_calls(context, single, tk, &block)
+      
+      args = parse_symbol_arg
+      readed = get_tkreaded
+      (args.empty? ? [tk.name] : args).each do |name|
+        if context
+          if single == SINGLE
+            yield RTSingleClassCall.new(readed, context, name, tk)
+          else
+            yield RTClassCall.new(readed, context, name, tk)
+          end
+        else
+          if single == SINGLE
+            yield RTSingleClassCall.new(readed, "main", name, tk)
+          else
+            yield RTClassCall.new(readed, nil, name, tk)
+          end
+        end
+      end
+    end
+
+    def parse_identifier(context, single, nest, symbeg, tk, &block)
+      case tk.name
+      when "attr"
+        parse_attr(context, single, tk, &block)
+      when /^attr_(reader|writer|accessor)$/
+        parse_attr_accessor(context, single, tk, &block)
+      else
+        if !context.nil? && nest == 1 && !symbeg
+          parse_known_class_method_calls(context, single, tk, &block)
+        end
+      end
+    end
+
+
+
     def parse_symbol_arg(no = nil)
       args = []
       skip_tkspace
-      case tk = get_tk
+      case (tk = get_tk)
       when TkLPAREN
         loop do
           skip_tkspace
@@ -563,32 +617,37 @@ module RTAGS
             break
           when TkCOMMA
           else
-					  warn('token not recognized in funargs',1,tk)
+            warn('token not recognized in funargs',1,tk)
             break
           end
         end
       else
         unget_tk tk
-        if tk = parse_symbol_in_arg
-          args.push tk
-          return args if no and args.size >= no
-        end
 
         loop do
           skip_tkspace(false)
-          case tk1 = get_tk
+          case (tk1 = get_tk)
           when TkCOMMA
-          when TkNL
+          when TkDO, TkNL
             unget_tk tk1
             break
           else
-					  warn('token not recognized in funargs',1,tk1)
-            break
-          end
-          skip_tkspace
-          if tk = parse_symbol_in_arg
-            args.push tk
-            break if no and args.size >= no
+            skip_tkspace
+            unget_tk tk1
+            if tk = parse_symbol_in_arg
+              args.push tk
+              break if no and args.size >= no
+            else
+	      warn('token not recognized in funargs',1,tk1)
+
+              unless args.empty?
+                while (tk2 = get_tk) && !tk2.is_a?(TkNL) && !tk2.is_a?(TkDO)
+                end
+                unget_tk tk2
+                return args
+              end
+              return args
+            end
           end
         end
       end
@@ -596,21 +655,34 @@ module RTAGS
     end
 
     def parse_symbol_in_arg
-      case tk = get_tk
+      case (tk = get_tk)
       when TkSYMBEG
-        case tk = get_tk
-        when TkCONSTANT, 
-            TkIDENTIFIER,
-            TkFID
-          tk.name
+        case (tk1 = get_tk)
+        when TkIDENTIFIER
+          tokens = skip_tkspace(false)
+          if (tk2 = get_tk).is_a?(TkASSIGN)
+            unget_tk tk2
+            tokens.each { |tk3| unget_tk tk3 }
+            unget_tk tk1
+            unget_tk tk
+	    warn('token not recognized; next ',1,tk)
+            nil
+          else
+            tokens.each { |tk3| unget_tk tk3 }
+            tk1.name
+          end
+        when TkCONSTANT, TkFID
+          tk1.name
         else
-					warn('token not recognized; next SYMBEG ',1,tk)
+          unget_tk tk1
+          warn('token not recognized; next SYMBEG ',1,tk1)
           nil
         end
       when TkSTRING
         eval @readed[-1]
       else
-				warn('token not recognized; next SYMBEG and STRING ',1,tk) if $options.debug 
+        unget_tk tk
+        warn('token not recognized; next SYMBEG and STRING ',1,tk) if $options.debug 
         nil
       end
     end
@@ -746,7 +818,7 @@ module RTAGS
           line = tk.readed.split(/\n/)[0]
           unless $options.xref_only_abs
             output.push sprintf("%-16s %-10s %4d %-16s %s\n",
-                                tk.name.gsub(/^::/, "").gsub("::", ":").gsub(".", "#"),
+                                tk.name.gsub(/^::/, ""),
                                 tk.def_name,
                                 tk.line_no,
                                 fn,
@@ -755,7 +827,7 @@ module RTAGS
 
           unless $options.xref_only_base
             output.push sprintf("%-16s %-10s %4d %-16s %s\n",
-                                tk.abs_name.gsub(/^::/, "").gsub("::", ":").gsub(".", "#"),
+                                tk.abs_name.gsub(/^::/, ""),
                                 tk.def_name,
                                 tk.line_no,
                                 fn,
