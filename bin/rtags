@@ -343,7 +343,7 @@ module RTAGS
 		
     def parse_statements(context = nil, single = NORMAL, &block)
       begin
-				last_seekpos = -1
+        last_seekpos = -1
         nest = 1
         symbeg = false
 
@@ -422,19 +422,19 @@ module RTAGS
 
       when TkLSHFT
         skip_tkspace
-        case name_t2 = get_tk
+        case (name_t2 = get_tk)
         when TkSELF
           parse_statements(context, SINGLE, &block)
-        when TkCONSTANT
+        when TkCONSTANT, TkIVAR
 #          yield RTSingleClass.new(get_tkreaded, context, name_t2.name, tk)
           parse_statements((context || "") + "::" + name_t2.name, 
-                           SINGLE, 
+                           SINGLE,
                            &block)
         else
-					warn('unrecognised token',1,name_t2)
+          warn('unrecognised token',1,name_t2)
         end
       else
-				warn('unrecognised token',1,name_t2)
+        warn('unrecognised token',1,name_t2)
       end
     end
 
@@ -475,8 +475,7 @@ module RTAGS
 
       else
         unget_tk dot
-        back_tk.reverse_each do
-          |tk|
+        back_tk.reverse_each do |tk|
           unget_tk tk
         end
         name = name_t.name
@@ -564,7 +563,6 @@ module RTAGS
     KNOWN_CLASS_METHOD_CALLS = %w(belongs_to has_one has_many has_and_belongs_to_many after_create after_destroy after_find after_initialize after_save after_update after_validation around_create around_destroy around_save around_update before_create before_destroy before_save before_update before_validation)
 
     def parse_known_class_method_calls(context, single, tk, &block)
-      
       args = parse_symbol_arg
       readed = get_tkreaded
       (args.empty? ? [tk.name] : args).each do |name|
