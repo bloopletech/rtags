@@ -564,7 +564,7 @@ module RTAGS
       end    
     end
 
-    BAD_KNOWN_CLASS_METHODS = %w(class_eval instance_eval)
+    BAD_KNOWN_CLASS_METHODS = %w(class_eval instance_eval public private protected)
 
     def parse_known_class_method_calls(context, single, tk, &block)
       args = parse_symbol_arg
