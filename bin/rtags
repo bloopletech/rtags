@@ -564,7 +564,7 @@ module RTAGS
       end    
     end
 
-    KNOWN_CLASS_METHOD_CALLS = %w(belongs_to has_one has_many has_and_belongs_to_many after_create after_destroy after_find after_initialize after_save after_update after_validation around_create around_destroy around_save around_update before_create before_destroy before_save before_update before_validation)
+    BAD_KNOWN_CLASS_METHODS = %w(class_eval instance_eval)
 
     def parse_known_class_method_calls(context, single, tk, &block)
       args = parse_symbol_arg
@@ -593,7 +593,7 @@ module RTAGS
       when /^attr_(reader|writer|accessor)$/
         parse_attr_accessor(context, single, tk, &block)
       else
-        if !context.nil? && nest == 1 && !symbeg
+        if !context.nil? && nest == 1 && !symbeg && !BAD_KNOWN_CLASS_METHODS.include?(tk.name)
           parse_known_class_method_calls(context, single, tk, &block)
         end
       end
@@ -827,7 +827,7 @@ module RTAGS
           line = tk.readed.split(/\n/)[0]
           unless $options.xref_only_abs
             output.push sprintf("%-16s %-10s %4d %-16s %s\n",
-                                tk.name.gsub(/^::/, "").gsub(" ", "_"),
+                                tk.name.gsub(/^::/, "").gsub(" ", "_").gsub(/\n/, '\n'),
                                 tk.def_name,
                                 tk.line_no,
                                 fn,
@@ -836,7 +836,7 @@ module RTAGS
 
           unless $options.xref_only_base
             output.push sprintf("%-16s %-10s %4d %-16s %s\n",
-                                tk.abs_name.gsub(/^::/, "").gsub(" ", "_"),
+                                tk.abs_name.gsub(/^::/, "").gsub(" ", "_").gsub(/\n/, '\n'),
                                 tk.def_name,
                                 tk.line_no,
                                 fn,
