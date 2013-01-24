@@ -14,4 +14,6 @@ rdoc
 spec/reports
 test/tmp
 test/version_tmp
+test/regression/*.tags
+test/regression/*.TAGS
 tmp
