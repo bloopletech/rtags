@@ -374,6 +374,10 @@ module RTAGS
             symbeg = false
           when TkEND
             return if (nest -= 1) == 0
+          when TkLBRACE, TkfLBRACE
+            nest += 1
+          when TkRBRACE
+            nest -= 1
           end
           begin
             get_tkreaded
@@ -605,18 +609,18 @@ module RTAGS
         loop do
           skip_tkspace
           if tk1 = parse_symbol_in_arg
-            args.push tk1
-            break if no and args.size >= no
+            args << tk1
+            return args if no and args.size >= no
           end
 
           skip_tkspace
           case tk2 = get_tk
           when TkRPAREN
-            break
+            return args
           when TkCOMMA
           else
             warn('token not recognized in funargs',1,tk)
-            break
+            return args
           end
         end
       else
@@ -624,28 +628,24 @@ module RTAGS
 
         loop do
           skip_tkspace(false)
-          case (tk1 = get_tk)
-          when TkCOMMA
-          when TkDO, TkNL
-            unget_tk tk1
-            break
-          else
+
+          case tk1 = get_tk
+          when TkCOMMA, TkOp
             skip_tkspace
+          when TkDO, TkNL, TkASSIGN
+            unget_tk tk1
+            return args
+          else
             unget_tk tk1
             if tk = parse_symbol_in_arg
-              args.push tk
-              break if no and args.size >= no
+              args << tk
+              return args if no and args.size >= no
             else
 	      warn('token not recognized in funargs',1,tk1)
-
-              unless args.empty?
-                while (tk2 = get_tk) && !tk2.is_a?(TkNL) && !tk2.is_a?(TkDO)
-                end
-                unget_tk tk2
-                return args
-              end
               return args
             end
+
+            skip_tkspace(false)
           end
         end
       end
@@ -653,35 +653,46 @@ module RTAGS
     end
 
     def parse_symbol_in_arg
-      case (tk = get_tk)
-      when TkSYMBEG
-        case (tk1 = get_tk)
+      tokens = []
+      symbeg = nil
+      while (tk = get_tk)
+        case tk
+        when TkSYMBEG
+          symbeg = tk
         when TkIDENTIFIER
-          tokens = skip_tkspace(false)
-          if (tk2 = get_tk).is_a?(TkASSIGN)
-            unget_tk tk2
-            tokens.each { |tk3| unget_tk tk3 }
-            unget_tk tk1
-            unget_tk tk
-	    warn('token not recognized; next ',1,tk)
-            nil
-          else
-            tokens.each { |tk3| unget_tk tk3 }
-            tk1.name
-          end
-        when TkCONSTANT, TkFID
-          tk1.name
-        else
+          skip_tkspace(false)
+
+          tk1 = get_tk
           unget_tk tk1
-          warn('token not recognized; next SYMBEG ',1,tk1)
-          nil
+          
+          if tk1.is_a?(TkASSIGN)
+            unget_tk tk
+            unget_tk symbeg if symbeg
+            warn('token not recognized; next ',1,tk)
+            return tokens.empty? ? nil : tokens.join
+          end
+
+          tokens << tk.name
+          symbeg = nil
+        when TkCONSTANT, TkFID
+          tokens << tk.name
+          symbeg = nil
+        when TkSTRING
+          tokens << eval(@readed[-1])
+          symbeg = nil
+        when TkCOLON2
+          tokens << "::"
+          symbeg = nil
+        when TkDOT
+          tokens << "."
+          symbeg = nil
+        else
+          unget_tk tk
+          unget_tk symbeg if symbeg
+          warn('token not recognized; next SYMBEG ',1,tk)
+          return tokens.empty? ? nil : tokens.join
         end
-      when TkSTRING
-        eval @readed[-1]
-      else
-        unget_tk tk
-        warn('token not recognized; next SYMBEG and STRING ',1,tk) if $options.debug 
-        nil
+        skip_tkspace(false)
       end
     end
   end
