@@ -366,7 +366,7 @@ module RTAGS
                TkUNTIL,
                TkWHILE, 
                TkBEGIN
-            nest += 1
+            nest += 1 unless symbeg
           when TkSYMBEG
             symbeg = true
           when TkIDENTIFIER
