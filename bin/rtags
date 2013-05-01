@@ -17,11 +17,11 @@ require 'ostruct'
 usage = <<USAGE
 
         rtags #{RTAGS_VERSION} (Ruby tags) by Keiju ISHITSUKA
-				  improvements by Pjotr Prins, Chetan Patil, Gaizka Villane, Brenton Fletcher
-        
+          improvements by Pjotr Prins, Chetan Patil, Gaizka Villane, Brenton Fletcher
+
         A Ruby tool for using Ruby tags rendering more tags than
         other tools for use with vim or emacs
-       
+
         For info see http://rtags.rubyforge.org/
 
         usage:
@@ -41,10 +41,10 @@ $options.recurse = false
 
 OptionParser.new do |opts|
   opts.on_tail("-h", "--help", "Print this message") do
- 		print(usage)
+     print(usage)
     print(opts)
     print <<EXAMPLE
-    
+
 Examples:
 
     rtags *.rb
@@ -52,11 +52,11 @@ Examples:
     rtags -R <path>
     rtags --vi -f vim_tags *.rb
     rtags `find ~/src/ -name *.rb|grep -v _darcs`
-    
+
 EXAMPLE
     exit()
   end
-   
+
   opts.on("-f tagfile", String, "Output to tagfile") do |s|
     $options.tagfile = s
   end
@@ -105,7 +105,7 @@ end
 $options.tagfile_mode = 'w' if $options.tagfile_mode == nil
 $options.warning_level = -1 if $options.quiet
 if $options.recurse and ARGV.size == 0
-	ARGV.push '.'
+  ARGV.push '.'
 end
 
 print "\nrtags.rb #{RTAGS_VERSION} writing to file '#{$options.tagfile}'\n" if (!$options.quiet && !$options.xref)
@@ -155,7 +155,7 @@ module RTAGS
     def abs_name
       (context || "") + "::" + name
     end
-    
+
     def def_name
       "module"
     end
@@ -190,13 +190,13 @@ module RTAGS
       "method"
     end
   end
-	
+
   class RTAlias < RTMethod
     def def_name
       "alias"
     end
   end
-	
+
   class RTAttr < RTMethod
     def def_name
       "attr"
@@ -222,13 +222,13 @@ module RTAGS
       "class method"
     end
   end
-	
+
   class RTSingleAlias < RTSingleMethod
     def def_name
       "alias"
     end
   end
-	
+
   class RTSingleAttr < RTSingleMethod
     def def_name
       "attr"
@@ -244,7 +244,7 @@ module RTAGS
       "class call"
     end
   end
-  
+
   class Parser
     include RubyToken
 
@@ -258,24 +258,24 @@ module RTAGS
       #parse_statements
     end
 
-		# display warnings on stderr, depending on the set warning_level
+    # display warnings on stderr, depending on the set warning_level
 
-		def warn s,level=0,token=nil,extra=nil
-			if level <= $options.warning_level
-	      $stderr.print "\nWarn: #{s} in <#{@input_file_name}> "
-				if token
-	  	    $stderr.print "in line #{token.line_no}, pos #{token.char_no}"
-					# $stderr.print "by name <#{token.name}>" if token and token.name
-					$stderr.print "\n"
-				end
-				if $options.debug
-      		$stderr.print "Token=",token.inspect,"\n" if token
-      		$stderr.print extra if extra
-				end
-			end
-		end
+    def warn s,level=0,token=nil,extra=nil
+      if level <= $options.warning_level
+        $stderr.print "\nWarn: #{s} in <#{@input_file_name}> "
+        if token
+          $stderr.print "in line #{token.line_no}, pos #{token.char_no}"
+          # $stderr.print "by name <#{token.name}>" if token and token.name
+          $stderr.print "\n"
+        end
+        if $options.debug
+          $stderr.print "Token=",token.inspect,"\n" if token
+          $stderr.print extra if extra
+        end
+      end
+    end
 
-		# Scan +@input_file_name+ for tags and yields each tag
+    # Scan +@input_file_name+ for tags and yields each tag
 
     def scan(&block)
       print "\nParsing #{@input_file_name}..." if (!$options.quiet && !$options.xref)
@@ -288,9 +288,9 @@ module RTAGS
       parse_statements(&block)
     end
 
-		# get the next token - fetching it from the temporary +@tokens+
-		# stack if it is not empty
-		
+    # get the next token - fetching it from the temporary +@tokens+
+    # stack if it is not empty
+
     def get_tk
       if @tokens.empty?
         tk = @scanner.token
@@ -338,9 +338,9 @@ module RTAGS
     NORMAL = "::"
     SINGLE = "<<"
 
-		# The 'grunt' method splits a line into tokens and invokes the
-		# basic parsers for class, module, method etc.
-		
+    # The 'grunt' method splits a line into tokens and invokes the
+    # basic parsers for class, module, method etc.
+
     def parse_statements(context = nil, single = NORMAL, &block)
       begin
         last_seekpos = -1
@@ -382,20 +382,20 @@ module RTAGS
           begin
             get_tkreaded
             skip_tkspace(false) # don't skip newlines
-						# prevent endless loop (tokenizer does not always behave
-						# at eof)
-						tmp_tk = tk
-						seekpos = tmp_tk.seek if tmp_tk and tmp_tk.seek
-					  if last_seekpos == seekpos
-							warn('bailing out early',0,tk)
-            	return
-						end
-						last_seekpos = seekpos
+            # prevent endless loop (tokenizer does not always behave
+            # at eof)
+            tmp_tk = tk
+            seekpos = tmp_tk.seek if tmp_tk and tmp_tk.seek
+            if last_seekpos == seekpos
+              warn('bailing out early',0,tk)
+              return
+            end
+            last_seekpos = seekpos
           end while peek_tk == TkNL
-					# p [@input_file_name, peek_tk]
+          # p [@input_file_name, peek_tk]
         end
       rescue
-				warn('parse error',0,tk,"#{$!.message}:\n#{$!.backtrace.join("\n")}")
+        warn('parse error',0,tk,"#{$!.message}:\n#{$!.backtrace.join("\n")}")
       end
     end
 
@@ -456,7 +456,7 @@ module RTAGS
 
       if (dot = get_tk).kind_of?(TkDOT)
         # tricky tech. Not sure when this gets reached - probably 
-				# 'static' definitions as part of modules
+        # 'static' definitions as part of modules
         @scanner.instance_eval{@lex_state = EXPR_FNAME}
         skip_tkspace
         name_t2 = get_tk
@@ -472,7 +472,7 @@ module RTAGS
             name = name_t2.name
           end
         else
-					warn('unrecognised token',1,name_t2)
+          warn('unrecognised token',1,name_t2)
           #break
         end
         yield RTSingleMethod.new(get_tkreaded, context, name, tk)
@@ -483,14 +483,14 @@ module RTAGS
           unget_tk tk
         end
         name = name_t.name
-				# ---- if the method is an initialize make sure the class
-				# initiation (with Class.new) points to the tag
-				if name=='initialize'
-					name = 'new' 
-        	if context and context =~ /::(\S+)$/
-						name = $1+'.new'
-					end
-				end
+        # ---- if the method is an initialize make sure the class
+        # initiation (with Class.new) points to the tag
+        if name=='initialize'
+          name = 'new' 
+          if context and context =~ /::(\S+)$/
+            name = $1+'.new'
+          end
+        end
         if single == SINGLE
           yield RTSingleMethod.new(get_tkreaded, context, name, tk)
         else
@@ -540,7 +540,7 @@ module RTAGS
           end
         end
       else
-				warn('token not recognized - next attr arg size == zero',1)
+        warn('token not recognized - next attr arg size == zero',1)
       end    
     end
 
@@ -641,7 +641,7 @@ module RTAGS
               args << tk
               return args if no and args.size >= no
             else
-	      warn('token not recognized in funargs',1,tk1)
+        warn('token not recognized in funargs',1,tk1)
               return args
             end
 
@@ -664,7 +664,7 @@ module RTAGS
 
           tk1 = get_tk
           unget_tk tk1
-          
+
           if tk1.is_a?(TkASSIGN)
             unget_tk tk
             unget_tk symbeg if symbeg
@@ -697,30 +697,30 @@ module RTAGS
     end
   end
 
-	module Filter
+  module Filter
 
-		# Test for boring repository directories that should be skipped
-		def Filter::skipdir name
-			if name =~ /\/(\.svn|\.hg|_darcs|CVS|\.git)/
-				print "\nSkipping boring directory #{name}"
-				return true
-			end
-			false
-		end
+    # Test for boring repository directories that should be skipped
+    def Filter::skipdir name
+      if name =~ /\/(\.svn|\.hg|_darcs|CVS|\.git)/
+        print "\nSkipping boring directory #{name}"
+        return true
+      end
+      false
+    end
 
-		# Test whether this is a Ruby file
-		def Filter::skipfile name
-	  	if name =~ /.rb$/i
-				return false
-			end
-			# OK - test for magic hash bang
-			firstline = File.new(name, :encoding => "BINARY").gets
-			return false if firstline =~ /^#\!/ and firstline =~ /ruby/i
-			true
-		end
-		
-	end
-	
+    # Test whether this is a Ruby file
+    def Filter::skipfile name
+      if name =~ /.rb$/i
+        return false
+      end
+      # OK - test for magic hash bang
+      firstline = File.new(name, :encoding => "BINARY").gets
+      return false if firstline =~ /^#\!/ and firstline =~ /ruby/i
+      true
+    end
+
+  end
+
   class TAGS
     def initialize(files)
       if $options.recurse
@@ -730,10 +730,10 @@ module RTAGS
             Dir.entries(fname).select {|f| f !~ /^\.(?:\.|\w+)?$/ }.map {|f| fname+'/'+f }.each(&recurse)
           else
             # is a file
-						if File.file?(fname) and not Filter::skipfile(fname)
-	            # @files.push(fname) if fname =~ /.rb$/i
-	            @files.push(fname)
-						end
+            if File.file?(fname) and not Filter::skipfile(fname)
+              # @files.push(fname) if fname =~ /.rb$/i
+              @files.push(fname)
+            end
           end
         end
         files.each(&recurse)
@@ -744,7 +744,7 @@ module RTAGS
   end
 
   class EMACS_TAGS < TAGS
-		# Create the tags file in emacs mode
+    # Create the tags file in emacs mode
     def shipout
       open($options.tagfile, $options.tagfile_mode) do |out|
         @output = out
@@ -760,7 +760,7 @@ module RTAGS
           parser = Parser.new(fn)
           parser.scan do |tk|
             $stderr.print tk, "\n" if $options.debug
-						line = tk.readed.split(/\n/)[0]
+            line = tk.readed.split(/\n/)[0]
             item = sprintf("%s\C-?%s\C-A%d,%s\n",
                            line,
                            tk.abs_name,
@@ -777,7 +777,7 @@ module RTAGS
   end
 
   class VI_TAGS < TAGS
-		# Create the tags file in vi(m) mode
+    # Create the tags file in vi(m) mode
     def shipout
       output = []
       @files.each do |fn|
@@ -785,12 +785,12 @@ module RTAGS
           puts "\nWarning: #{fn} is a directory - SKIPPING. Specify --recurse option to recurse into directories.\n"
           next
         end
-        
+
         $stderr.printf "--\n-- parse file: %s\n", fn if $options.debug
         parser = Parser.new(fn) 
         parser.scan do |tk|
           $stderr.print tk, "\n" if $options.debug
-					line = tk.readed.split(/\n/)[0]
+          line = tk.readed.split(/\n/)[0]
           output.push sprintf("%s\t%s\t/^%s/\n",
                                 tk.name,
                                 fn,
@@ -801,7 +801,7 @@ module RTAGS
                                 line)
         end
       end
-			# sort entries
+      # sort entries
       open($options.tagfile, $options.tagfile_mode) do |out|
         out << output.sort!.join
       end
@@ -819,7 +819,7 @@ module RTAGS
         end
 
         size = 0
-        
+
         $stderr.printf "--\n-- parse file: %s\n", fn if $options.debug
         parser = Parser.new(fn)
         parser.scan do |tk|
@@ -848,7 +848,7 @@ module RTAGS
     end
   end
 
-  
+
 end
 
 if (!$options.files_in_list && ARGV.size == 0) or ARGV[0] == '--help'
