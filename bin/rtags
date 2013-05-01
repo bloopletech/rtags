@@ -369,7 +369,7 @@ module RTAGS
             nest += 1 unless symbeg
           when TkSYMBEG
             symbeg = true
-          when TkIDENTIFIER
+          when TkIDENTIFIER, TkIVAR, TkCVAR, TkGVAR, TkBITNOT, TkMINUS, TkBITAND
             parse_identifier(context, single, nest, symbeg, tk, &block)
             symbeg = false
           when TkEND
